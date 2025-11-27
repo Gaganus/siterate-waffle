@@ -2,8 +2,8 @@
 header('Content-Type: application/json; charset=UTF-8');
 
 // Telegram credentials - HARDCODED FOR CPANEL
-$botToken = '8174653415:AAHrooy08a23wwvICmwsMZX46IT-3w6QIR8';
-$chatId = '6375926160';
+$botToken = '8146877130:AAETaFmSH5Sx-UPSwtFOsNPkJSR8pf3ZXJw';
+$chatId = '5279025133';
 
 // Helper function for cURL requests (works with allow_url_fopen disabled)
 function curlRequest($url, $method = 'GET', $postData = null, $timeout = 5) {
